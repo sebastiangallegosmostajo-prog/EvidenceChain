@@ -1,0 +1,6 @@
+@EvidenceChain.Api_HostAddress = http://localhost:5101
+
+GET {{EvidenceChain.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
