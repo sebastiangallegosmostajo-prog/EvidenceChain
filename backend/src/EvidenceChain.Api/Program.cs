@@ -1,4 +1,13 @@
+using EvidenceChain.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString =
+    builder.Configuration.GetConnectionString(
+        "DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "The DefaultConnection connection string is missing.");
+
+builder.Services.AddInfrastructure(connectionString);
 
 // Add services to the container.
 
