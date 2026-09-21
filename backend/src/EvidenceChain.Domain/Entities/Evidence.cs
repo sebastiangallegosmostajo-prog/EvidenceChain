@@ -47,4 +47,39 @@ public sealed class Evidence
     public DateTimeOffset LastEventAtUtc { get; private set; }
 
     public IntegrityStatus IntegrityStatus { get; private set; }
+    
+    public void RegisterEvent(DateTimeOffset occurredAtUtc)
+    {
+        var normalizedDate = occurredAtUtc.ToUniversalTime();
+
+        if (normalizedDate < LastEventAtUtc)
+        {
+            throw new InvalidOperationException(
+                "Un evento no puede ser anterior al último evento registrado.");
+        }
+
+        LastEventAtUtc = normalizedDate;
+    }
+
+    public void TransferCustody(
+        Guid newCustodianId,
+        DateTimeOffset occurredAtUtc)
+    {
+        if (newCustodianId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El nuevo custodio es obligatorio.",
+                nameof(newCustodianId));
+        }
+
+        if (newCustodianId == CurrentCustodianId)
+        {
+            throw new InvalidOperationException(
+                "El nuevo custodio no puede ser el custodio actual.");
+        }
+
+        CurrentCustodianId = newCustodianId;
+
+        RegisterEvent(occurredAtUtc);
+    }
 }

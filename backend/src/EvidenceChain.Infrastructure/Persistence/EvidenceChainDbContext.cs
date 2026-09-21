@@ -1,10 +1,12 @@
+using EvidenceChain.Application.Common.Models;
+using EvidenceChain.Application.Common.Interfaces;
 using EvidenceChain.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EvidenceChain.Infrastructure.Persistence;
 
 public sealed class EvidenceChainDbContext
-    : DbContext
+    : DbContext, IEvidenceChainDbContext
 {
     public EvidenceChainDbContext(
         DbContextOptions<EvidenceChainDbContext> options)
@@ -19,6 +21,9 @@ public sealed class EvidenceChainDbContext
     public DbSet<CustodyEvent> CustodyEvents => Set<CustodyEvent>();
 
     public DbSet<CustodyTransfer> CustodyTransfers => Set<CustodyTransfer>();
+    
+    public DbSet<IdempotencyRecord> IdempotencyRecords =>
+        Set<IdempotencyRecord>();
 
     private void EnforceAppendOnlyCustodyEvents()
     {

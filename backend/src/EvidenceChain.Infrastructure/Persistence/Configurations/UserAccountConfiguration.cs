@@ -29,5 +29,9 @@ public sealed class UserAccountConfiguration
 
         builder.HasIndex(user => user.Email)
             .IsUnique();
+        
+        builder.Property(user => user.PasswordHash)
+            .HasMaxLength(500)
+            .IsRequired();
     }
 }

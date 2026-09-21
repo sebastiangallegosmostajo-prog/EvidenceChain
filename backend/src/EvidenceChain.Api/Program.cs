@@ -1,5 +1,23 @@
+using System.Security.Claims;
+using System.Text;
+using EvidenceChain.Api.Authentication;
+using EvidenceChain.Api.ErrorHandling;
+using EvidenceChain.Application.Common.Interfaces;
+using EvidenceChain.Application.Common.Options;
+using EvidenceChain.Application.CustodyTransfers.Request;
+using EvidenceChain.Application.CustodyTransfers.Accept;
 using EvidenceChain.Infrastructure;
+using EvidenceChain.Infrastructure.Persistence.Seeding;
+using EvidenceChain.Application.Authentication.Login;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// ==========================================
+// Configuración de la base de datos
+// ==========================================
 
 var connectionString =
     builder.Configuration.GetConnectionString(
@@ -7,25 +25,199 @@ var connectionString =
     ?? throw new InvalidOperationException(
         "The DefaultConnection connection string is missing.");
 
-builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddInfrastructure(
+    connectionString);
 
-// Add services to the container.
+// ==========================================
+// Configuración JWT
+// ==========================================
+
+var jwtSection =
+    builder.Configuration.GetSection(
+        JwtOptions.SectionName);
+
+var jwtOptions =
+    jwtSection.Get<JwtOptions>()
+    ?? throw new InvalidOperationException(
+        "La configuración JWT no existe.");
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Key) ||
+    jwtOptions.Key.Length < 32)
+{
+    throw new InvalidOperationException(
+        "El secreto Jwt:Key no existe o es demasiado corto.");
+}
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Issuer))
+{
+    throw new InvalidOperationException(
+        "La configuración Jwt:Issuer es obligatoria.");
+}
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Audience))
+{
+    throw new InvalidOperationException(
+        "La configuración Jwt:Audience es obligatoria.");
+}
+
+builder.Services.Configure<JwtOptions>(
+    jwtSection);
+
+// ==========================================
+// Servicios de ASP.NET Core
+// ==========================================
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description =
+                "Ingrese únicamente el token JWT."
+        });
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference =
+                        new OpenApiReference
+                        {
+                            Type =
+                                ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                },
+                Array.Empty<string>()
+            }
+        });
+});
+
+// ==========================================
+// Servicios de aplicación
+// ==========================================
+
+builder.Services.Configure<CustodyTransferOptions>(
+    builder.Configuration.GetSection(
+        CustodyTransferOptions.SectionName));
+
+builder.Services.AddSingleton(
+    TimeProvider.System);
+
+builder.Services.AddScoped<
+    RequestCustodyTransferHandler>();
+
+// ==========================================
+// Servicios de seguridad
+// ==========================================
+
+builder.Services.AddSingleton<
+    IJwtTokenGenerator,
+    JwtTokenGenerator>();
+
+builder.Services.AddSingleton<
+    IPasswordService,
+    AspNetPasswordService>();
+
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtOptions.Issuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwtOptions.Audience,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            jwtOptions.Key)),
+
+                ValidateLifetime = true,
+
+                ClockSkew =
+                    TimeSpan.FromSeconds(30),
+
+                NameClaimType =
+                    ClaimTypes.Name,
+
+                RoleClaimType =
+                    ClaimTypes.Role
+            };
+    });
+
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<DatabaseSeeder>();
+builder.Services.AddScoped<EvidenceDataSeeder>();
+builder.Services.AddScoped<LoginHandler>();
+builder.Services.AddScoped<RequestCustodyTransferHandler>();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddScoped<AcceptCustodyTransferHandler>();
+
+// ==========================================
+// Construcción de la aplicación
+// ==========================================
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ==========================================
+// Pipeline HTTP
+// ==========================================
+if (app.Environment.IsDevelopment())
+{
+    var seedPassword =
+        builder.Configuration[
+            "Seed:DefaultPassword"]
+        ?? throw new InvalidOperationException(
+            "El secreto Seed:DefaultPassword no está configurado.");
+
+    await using var scope =
+        app.Services.CreateAsyncScope();
+
+    var seeder =
+        scope.ServiceProvider
+            .GetRequiredService<DatabaseSeeder>();
+
+    await seeder.SeedUsersAsync(
+        seedPassword);
+
+    var evidenceSeeder =
+        scope.ServiceProvider
+            .GetRequiredService<EvidenceDataSeeder>();
+
+    await evidenceSeeder.SeedAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandler();
+
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
