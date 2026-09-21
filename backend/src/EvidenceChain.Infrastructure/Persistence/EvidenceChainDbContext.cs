@@ -18,6 +18,8 @@ public sealed class EvidenceChainDbContext
     
     public DbSet<CustodyEvent> CustodyEvents => Set<CustodyEvent>();
 
+    public DbSet<CustodyTransfer> CustodyTransfers => Set<CustodyTransfer>();
+
     private void EnforceAppendOnlyCustodyEvents()
     {
         var hasInvalidChanges = ChangeTracker
