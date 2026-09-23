@@ -4,7 +4,31 @@ import {
 import type {
   CustodyTransferActionResult,
   PendingCustodyTransfersResult,
+  RequestCustodyTransferResult,
 } from '../types/custodyTransfer'
+
+export function requestTransfer(
+  evidenceId: string,
+  toCustodianId: string,
+  idempotencyKey: string,
+): Promise<RequestCustodyTransferResult> {
+  return apiRequest<
+    RequestCustodyTransferResult
+  >(
+    '/api/v1/custody-transfers',
+    {
+      method: 'POST',
+      headers: {
+        'Idempotency-Key':
+          idempotencyKey,
+      },
+      body: JSON.stringify({
+        evidenceId,
+        toCustodianId,
+      }),
+    },
+  )
+}
 
 export function getPendingTransfers(
   signal?: AbortSignal,

@@ -1,7 +1,11 @@
 import {
   useEffect,
+  useRef,
   useState,
 } from 'react'
+import {
+  RequestTransferPanel,
+} from '../components/RequestTransferPanel'
 import {
   ApiError,
 } from '../services/api'
@@ -59,10 +63,13 @@ function getEventLabel(
     Record<string, string> = {
       EvidenceRegistered:
         'Evidencia registrada',
+
       TransferRequested:
         'Transferencia solicitada',
+
       TransferAccepted:
         'Transferencia aceptada',
+
       TransferRejected:
         'Transferencia rechazada',
     }
@@ -98,6 +105,9 @@ export function EvidenceDetailPage({
       null,
     )
 
+  const [refreshVersion, setRefreshVersion] =
+    useState(0)
+
   const [isLoading, setIsLoading] =
     useState(true)
 
@@ -107,12 +117,18 @@ export function EvidenceDetailPage({
   const [error, setError] =
     useState<string | null>(null)
 
+  const hasLoaded =
+    useRef(false)
+
   useEffect(() => {
     const controller =
       new AbortController()
 
     async function loadEvidence() {
-      setIsLoading(true)
+      if (!hasLoaded.current) {
+        setIsLoading(true)
+      }
+
       setError(null)
 
       try {
@@ -124,6 +140,7 @@ export function EvidenceDetailPage({
             evidenceId,
             controller.signal,
           ),
+
           getEvidenceChain(
             evidenceId,
             controller.signal,
@@ -132,6 +149,8 @@ export function EvidenceDetailPage({
 
         setDetail(detailResult)
         setChain(chainResult)
+
+        hasLoaded.current = true
       } catch (exception) {
         if (
           exception instanceof DOMException &&
@@ -167,7 +186,11 @@ export function EvidenceDetailPage({
     return () => {
       controller.abort()
     }
-  }, [evidenceId, onLogout])
+  }, [
+    evidenceId,
+    onLogout,
+    refreshVersion,
+  ])
 
   async function handleVerify() {
     setIsVerifying(true)
@@ -214,6 +237,12 @@ export function EvidenceDetailPage({
     }
   }
 
+  function handleTransferRequested() {
+    setRefreshVersion(
+      (current) => current + 1,
+    )
+  }
+
   return (
     <main className="authenticated-layout">
       <header className="application-header">
@@ -223,7 +252,10 @@ export function EvidenceDetailPage({
           </span>
 
           <div>
-            <strong>EvidenceChain</strong>
+            <strong>
+              EvidenceChain
+            </strong>
+
             <small>
               Cadena de custodia digital
             </small>
@@ -232,8 +264,13 @@ export function EvidenceDetailPage({
 
         <div className="user-menu">
           <div>
-            <strong>{session.name}</strong>
-            <small>{session.role}</small>
+            <strong>
+              {session.name}
+            </strong>
+
+            <small>
+              {session.role}
+            </small>
           </div>
 
           <button
@@ -276,9 +313,13 @@ export function EvidenceDetailPage({
                   Detalle de evidencia
                 </p>
 
-                <h1>{detail.code}</h1>
+                <h1>
+                  {detail.code}
+                </h1>
 
-                <p>{detail.description}</p>
+                <p>
+                  {detail.description}
+                </p>
               </div>
 
               <div className="detail-heading-actions">
@@ -308,17 +349,28 @@ export function EvidenceDetailPage({
 
             <section className="detail-grid">
               <article className="information-card">
-                <span>Custodio actual</span>
+                <span>
+                  Custodio actual
+                </span>
+
                 <strong>
-                  {detail.currentCustodianName}
+                  {
+                    detail.currentCustodianName
+                  }
                 </strong>
+
                 <small>
-                  {detail.currentCustodianEmail}
+                  {
+                    detail.currentCustodianEmail
+                  }
                 </small>
               </article>
 
               <article className="information-card">
-                <span>Fecha de registro</span>
+                <span>
+                  Fecha de registro
+                </span>
+
                 <strong>
                   {formatDate(
                     detail.createdAtUtc,
@@ -327,7 +379,10 @@ export function EvidenceDetailPage({
               </article>
 
               <article className="information-card">
-                <span>Último evento</span>
+                <span>
+                  Último evento
+                </span>
+
                 <strong>
                   {formatDate(
                     detail.lastEventAtUtc,
@@ -336,12 +391,33 @@ export function EvidenceDetailPage({
               </article>
 
               <article className="information-card">
-                <span>Eventos de custodia</span>
+                <span>
+                  Eventos de custodia
+                </span>
+
                 <strong>
                   {chain.events.length}
                 </strong>
               </article>
             </section>
+
+            {(
+              session.role ===
+                'Investigator' ||
+              session.role ===
+                'Supervisor'
+            ) && (
+              <RequestTransferPanel
+                evidenceId={detail.id}
+                currentCustodianId={
+                  detail.currentCustodianId
+                }
+                onRequested={
+                  handleTransferRequested
+                }
+                onLogout={onLogout}
+              />
+            )}
 
             {verification && (
               <section
@@ -360,7 +436,9 @@ export function EvidenceDetailPage({
 
                   <p>
                     Se verificaron{' '}
-                    {verification.eventCount}{' '}
+                    {
+                      verification.eventCount
+                    }{' '}
                     eventos el{' '}
                     {formatDate(
                       verification.verifiedAtUtc,
@@ -371,17 +449,22 @@ export function EvidenceDetailPage({
 
                 {verification.failureReason && (
                   <p>
-                    {verification.failureReason}
+                    {
+                      verification.failureReason
+                    }
                   </p>
                 )}
 
-                {verification.firstInvalidSequenceNumber && (
+                {verification
+                  .firstInvalidSequenceNumber && (
                   <p>
                     Primer evento inválido:
                     secuencia{' '}
                     {
-                      verification.firstInvalidSequenceNumber
-                    }.
+                      verification
+                        .firstInvalidSequenceNumber
+                    }
+                    .
                   </p>
                 )}
               </section>
@@ -389,13 +472,17 @@ export function EvidenceDetailPage({
 
             {chain.anomalies.length > 0 && (
               <section className="anomaly-section">
-                <h2>Anomalías detectadas</h2>
+                <h2>
+                  Anomalías detectadas
+                </h2>
 
                 {chain.anomalies.map(
                   (anomaly) => (
                     <article
                       className="anomaly-card"
-                      key={anomaly.transferId}
+                      key={
+                        anomaly.transferId
+                      }
                     >
                       <strong>
                         {anomaly.severity} ·{' '}
@@ -403,7 +490,9 @@ export function EvidenceDetailPage({
                       </strong>
 
                       <p>
-                        {anomaly.explanation}
+                        {
+                          anomaly.explanation
+                        }
                       </p>
 
                       <small>
@@ -448,7 +537,9 @@ export function EvidenceDetailPage({
                       key={event.id}
                     >
                       <div className="timeline-marker">
-                        {event.sequenceNumber}
+                        {
+                          event.sequenceNumber
+                        }
                       </div>
 
                       <div className="timeline-content">
@@ -472,20 +563,29 @@ export function EvidenceDetailPage({
                           </span>
                         </div>
 
-                        <p>{event.details}</p>
+                        <p>
+                          {event.details}
+                        </p>
 
-                        {(event.fromCustodianName ||
-                          event.toCustodianName) && (
+                        {(
+                          event
+                            .fromCustodianName ||
+                          event.toCustodianName
+                        ) && (
                           <div className="custody-change">
                             <span>
-                              {event.fromCustodianName ??
+                              {event
+                                .fromCustodianName ??
                                 'Sin custodio'}
                             </span>
 
-                            <strong>→</strong>
+                            <strong>
+                              →
+                            </strong>
 
                             <span>
-                              {event.toCustodianName ??
+                              {event
+                                .toCustodianName ??
                                 'Sin custodio'}
                             </span>
                           </div>
@@ -493,18 +593,29 @@ export function EvidenceDetailPage({
 
                         {event.hasAnomaly && (
                           <div className="event-anomaly">
-                            {event.anomalyExplanation}
+                            {
+                              event
+                                .anomalyExplanation
+                            }
                           </div>
                         )}
 
                         <details className="hash-details">
                           <summary>
-                            Información criptográfica
+                            Información
+                            criptográfica
                           </summary>
 
                           <div>
-                            <span>Hash anterior</span>
-                            <code title={event.previousHash}>
+                            <span>
+                              Hash anterior
+                            </span>
+
+                            <code
+                              title={
+                                event.previousHash
+                              }
+                            >
                               {shortenHash(
                                 event.previousHash,
                               )}
@@ -512,8 +623,15 @@ export function EvidenceDetailPage({
                           </div>
 
                           <div>
-                            <span>Hash del evento</span>
-                            <code title={event.hash}>
+                            <span>
+                              Hash del evento
+                            </span>
+
+                            <code
+                              title={
+                                event.hash
+                              }
+                            >
                               {shortenHash(
                                 event.hash,
                               )}

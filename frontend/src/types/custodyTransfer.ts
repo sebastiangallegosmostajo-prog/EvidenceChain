@@ -29,3 +29,20 @@ export interface CustodyTransferActionResult {
   rejectionReason: string | null
   rowVersion: string
 }
+
+export interface CustodianListItem {
+  id: string
+  name: string
+  email: string
+}
+
+export interface RequestCustodyTransferResult {
+  transferId: string
+  evidenceId: string
+  fromCustodianId: string
+  toCustodianId: string
+  status: string
+  requestedAtUtc: string
+  expiresAtUtc: string
+  rowVersion: string
+}
