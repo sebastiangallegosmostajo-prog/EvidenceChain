@@ -2,6 +2,9 @@ import {
   apiRequest,
 } from './api'
 import type {
+  ChainVerificationResult,
+  EvidenceChainResult,
+  EvidenceDetail,
   EvidenceListFilters,
   EvidenceListResult,
 } from '../types/evidence'
@@ -54,6 +57,43 @@ export async function getEvidenceList(
     {
       method: 'GET',
       signal,
+    },
+  )
+}
+
+export function getEvidenceDetail(
+  evidenceId: string,
+  signal?: AbortSignal,
+): Promise<EvidenceDetail> {
+  return apiRequest<EvidenceDetail>(
+    `/api/v1/evidence/${evidenceId}`,
+    {
+      method: 'GET',
+      signal,
+    },
+  )
+}
+
+export function getEvidenceChain(
+  evidenceId: string,
+  signal?: AbortSignal,
+): Promise<EvidenceChainResult> {
+  return apiRequest<EvidenceChainResult>(
+    `/api/v1/evidence/${evidenceId}/chain`,
+    {
+      method: 'GET',
+      signal,
+    },
+  )
+}
+
+export function verifyEvidenceChain(
+  evidenceId: string,
+): Promise<ChainVerificationResult> {
+  return apiRequest<ChainVerificationResult>(
+    `/api/v1/evidence/${evidenceId}/chain/verify`,
+    {
+      method: 'GET',
     },
   )
 }

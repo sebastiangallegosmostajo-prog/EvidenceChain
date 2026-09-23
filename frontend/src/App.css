@@ -466,3 +466,264 @@ tbody tr:hover {
     flex: 1;
   }
 }
+
+.table-action,
+.back-button {
+  padding: 0.6rem 0.85rem;
+  color: #08735f;
+  background: #e5f7f1;
+  white-space: nowrap;
+}
+
+.table-action:hover:not(:disabled),
+.back-button:hover:not(:disabled) {
+  color: #ffffff;
+  background: #08735f;
+}
+
+.back-button {
+  margin-bottom: 1.5rem;
+}
+
+.detail-state {
+  padding: 5rem 2rem;
+  color: #60717a;
+  text-align: center;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.detail-heading h1 {
+  margin: 0;
+  color: #0b2633;
+  font-size: clamp(2.3rem, 5vw, 4rem);
+}
+
+.detail-heading p:last-child {
+  max-width: 750px;
+  color: #60717a;
+}
+
+.detail-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.integrity-badge.large {
+  padding: 0.65rem 1rem;
+  font-size: 0.85rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.information-card {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1.25rem;
+  border: 1px solid #dce5e8;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.information-card span,
+.information-card small {
+  color: #6b7e86;
+}
+
+.information-card strong {
+  color: #17343f;
+}
+
+.verification-card {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  border: 1px solid;
+  border-radius: 1rem;
+}
+
+.verification-card p {
+  margin: 0.35rem 0 0;
+}
+
+.verification-card.success {
+  border-color: #9edcc9;
+  color: #12644f;
+  background: #e9f9f3;
+}
+
+.verification-card.failure {
+  border-color: #efaaaa;
+  color: #8f2020;
+  background: #fff0f0;
+}
+
+.anomaly-section {
+  margin-bottom: 2rem;
+}
+
+.anomaly-section h2 {
+  color: #0b2633;
+}
+
+.anomaly-card {
+  margin-bottom: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #f0b4b4;
+  border-radius: 0.9rem;
+  color: #842727;
+  background: #fff2f2;
+}
+
+.anomaly-card p {
+  margin: 0.5rem 0;
+}
+
+.timeline-section {
+  padding: 1.5rem;
+  border: 1px solid #dce5e8;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: #0b2633;
+}
+
+.section-heading > span {
+  color: #60717a;
+}
+
+.timeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.timeline-event {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+}
+
+.timeline-marker {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #08735f;
+  font-weight: 800;
+}
+
+.timeline-content {
+  padding: 1.1rem;
+  border: 1px solid #dce5e8;
+  border-radius: 0.9rem;
+  background: #fbfcfc;
+}
+
+.timeline-event.anomaly
+.timeline-content {
+  border-color: #edaaaa;
+  background: #fff7f7;
+}
+
+.event-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.event-heading > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.event-heading span {
+  color: #6b7e86;
+  font-size: 0.82rem;
+}
+
+.custody-change {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.9rem 0;
+  color: #39545e;
+}
+
+.event-anomaly {
+  margin: 0.8rem 0;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  color: #8f2020;
+  background: #ffe7e7;
+}
+
+.hash-details {
+  margin-top: 1rem;
+  color: #52676f;
+  font-size: 0.82rem;
+}
+
+.hash-details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.hash-details > div {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.8rem;
+}
+
+.hash-details code {
+  overflow-wrap: anywhere;
+  color: #0f5e51;
+}
+
+@media (max-width: 950px) {
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .detail-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-heading-actions,
+  .event-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -22,6 +22,9 @@ import type {
 interface EvidenceListPageProps {
   session: AuthSession
   onLogout: () => void
+  onSelectEvidence: (
+    evidenceId: string,
+  ) => void
 }
 
 function readFiltersFromUrl():
@@ -119,7 +122,7 @@ function createUrl(
     filters.pageSize.toString(),
   )
 
-  return `${window.location.pathname}?${parameters.toString()}`
+  return `/?${parameters.toString()}`
 }
 
 function formatDate(value: string): string {
@@ -150,6 +153,7 @@ function getIntegrityLabel(
 export function EvidenceListPage({
   session,
   onLogout,
+  onSelectEvidence,
 }: EvidenceListPageProps) {
   const [filters, setFilters] =
     useState<EvidenceListFilters>(
@@ -205,9 +209,11 @@ export function EvidenceListPage({
         readFiltersFromUrl()
 
       setFilters(nextFilters)
+
       setDraftSearch(
         nextFilters.search,
       )
+
       setDraftCustodianId(
         nextFilters.custodianId,
       )
@@ -351,6 +357,7 @@ export function EvidenceListPage({
 
           <div>
             <strong>EvidenceChain</strong>
+
             <small>
               Cadena de custodia digital
             </small>
@@ -359,8 +366,13 @@ export function EvidenceListPage({
 
         <div className="user-menu">
           <div>
-            <strong>{session.name}</strong>
-            <small>{session.role}</small>
+            <strong>
+              {session.name}
+            </strong>
+
+            <small>
+              {session.role}
+            </small>
           </div>
 
           <button
@@ -380,11 +392,13 @@ export function EvidenceListPage({
               Gestión de evidencias
             </p>
 
-            <h1>Bandeja de evidencias</h1>
+            <h1>
+              Bandeja de evidencias
+            </h1>
 
             <p>
-              Consulta evidencias y revisa su
-              estado de integridad.
+              Consulta evidencias y revisa
+              su estado de integridad.
             </p>
           </div>
 
@@ -439,7 +453,9 @@ export function EvidenceListPage({
             Integridad
 
             <select
-              value={filters.integrityStatus}
+              value={
+                filters.integrityStatus
+              }
               onChange={(event) =>
                 handleStatusChange(
                   event.target.value as
@@ -470,7 +486,9 @@ export function EvidenceListPage({
             Orden
 
             <select
-              value={filters.sortDirection}
+              value={
+                filters.sortDirection
+              }
               onChange={(event) =>
                 handleSortChange(
                   event.target.value as
@@ -526,9 +544,14 @@ export function EvidenceListPage({
                     <tr>
                       <th>Código</th>
                       <th>Descripción</th>
-                      <th>Custodio actual</th>
-                      <th>Último evento</th>
+                      <th>
+                        Custodio actual
+                      </th>
+                      <th>
+                        Último evento
+                      </th>
                       <th>Integridad</th>
+                      <th>Acción</th>
                     </tr>
                   </thead>
 
@@ -543,7 +566,9 @@ export function EvidenceListPage({
                           </td>
 
                           <td>
-                            {evidence.description}
+                            {
+                              evidence.description
+                            }
                           </td>
 
                           <td>
@@ -571,6 +596,20 @@ export function EvidenceListPage({
                               )}
                             </span>
                           </td>
+
+                          <td>
+                            <button
+                              className="table-action"
+                              type="button"
+                              onClick={() =>
+                                onSelectEvidence(
+                                  evidence.id,
+                                )
+                              }
+                            >
+                              Ver detalle
+                            </button>
+                          </td>
                         </tr>
                       ),
                     )}
@@ -591,7 +630,9 @@ export function EvidenceListPage({
                   <button
                     className="secondary-button"
                     type="button"
-                    disabled={result.page <= 1}
+                    disabled={
+                      result.page <= 1
+                    }
                     onClick={() =>
                       handlePageChange(
                         result.page - 1,
