@@ -4,6 +4,7 @@ using EvidenceChain.Application.CustodyTransfers.Accept;
 using EvidenceChain.Application.CustodyTransfers.Common;
 using EvidenceChain.Application.CustodyTransfers.Reject;
 using EvidenceChain.Application.CustodyTransfers.Request;
+using EvidenceChain.Application.CustodyTransfers.ListPending;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,10 +25,14 @@ public sealed class CustodyTransfersController
     private readonly RejectCustodyTransferHandler
         _rejectTransferHandler;
 
+    private readonly GetPendingCustodyTransfersHandler
+        _getPendingTransfersHandler;
+
     public CustodyTransfersController(
         RequestCustodyTransferHandler requestTransferHandler,
         AcceptCustodyTransferHandler acceptTransferHandler,
-        RejectCustodyTransferHandler rejectTransferHandler)
+        RejectCustodyTransferHandler rejectTransferHandler,
+        GetPendingCustodyTransfersHandler getPendingTransfersHandler)
     {
         _requestTransferHandler =
             requestTransferHandler;
@@ -37,6 +42,55 @@ public sealed class CustodyTransfersController
 
         _rejectTransferHandler =
             rejectTransferHandler;
+
+        _getPendingTransfersHandler =
+            getPendingTransfersHandler;
+    }
+
+    // ==========================================
+    // Consultar transferencias pendientes
+    // ==========================================
+
+    [HttpGet("pending")]
+    [Authorize(Roles = "Custodian")]
+    [ProducesResponseType(
+        typeof(PendingCustodyTransfersResult),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status403Forbidden)]
+    public async Task<
+        ActionResult<PendingCustodyTransfersResult>>
+        GetPendingTransfers(
+            CancellationToken cancellationToken)
+    {
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(
+                userIdValue,
+                out var custodianId))
+        {
+            return Problem(
+                statusCode:
+                    StatusCodes.Status401Unauthorized,
+                title:
+                    "Token inválido.",
+                detail:
+                    "El token no contiene un identificador de usuario válido.");
+        }
+
+        var result =
+            await _getPendingTransfersHandler
+                .HandleAsync(
+                    custodianId,
+                    cancellationToken);
+
+        return Ok(result);
     }
 
     // ==========================================

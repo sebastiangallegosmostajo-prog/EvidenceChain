@@ -14,6 +14,9 @@ import {
   LoginPage,
 } from './pages/LoginPage'
 import {
+  PendingTransfersPage,
+} from './pages/PendingTransfersPage'
+import {
   clearSession,
   getStoredSession,
 } from './services/authService'
@@ -34,6 +37,12 @@ function getEvidenceIdFromPath():
   return match?.[1] ?? null
 }
 
+function isPendingTransfersPath():
+  boolean {
+  return window.location.pathname ===
+    '/transfers/pending'
+}
+
 function App() {
   const [session, setSession] =
     useState<AuthSession | null>(
@@ -47,56 +56,100 @@ function App() {
     getEvidenceIdFromPath,
   )
 
-  useEffect(() => {
-    const handlePopState = () => {
+  const [
+    showingPendingTransfers,
+    setShowingPendingTransfers,
+  ] = useState(
+    isPendingTransfersPath,
+  )
+
+  const synchronizeRoute =
+    useCallback(() => {
       setSelectedEvidenceId(
         getEvidenceIdFromPath(),
       )
-    }
 
+      setShowingPendingTransfers(
+        isPendingTransfersPath(),
+      )
+    }, [])
+
+  useEffect(() => {
     window.addEventListener(
       'popstate',
-      handlePopState,
+      synchronizeRoute,
     )
 
     return () => {
       window.removeEventListener(
         'popstate',
-        handlePopState,
+        synchronizeRoute,
       )
     }
-  }, [])
+  }, [synchronizeRoute])
+
+  const handleLogin =
+    useCallback(
+      (authenticatedSession:
+        AuthSession) => {
+        setSession(
+          authenticatedSession,
+        )
+
+        if (
+          authenticatedSession.role ===
+          'Custodian'
+        ) {
+          window.history.replaceState(
+            {},
+            '',
+            '/transfers/pending',
+          )
+        } else {
+          window.history.replaceState(
+            {},
+            '',
+            '/',
+          )
+        }
+
+        synchronizeRoute()
+      },
+      [synchronizeRoute],
+    )
 
   const handleLogout =
     useCallback(() => {
       clearSession()
       setSession(null)
-      setSelectedEvidenceId(null)
 
       window.history.replaceState(
         {},
         '',
         '/',
       )
-    }, [])
+
+      synchronizeRoute()
+    }, [synchronizeRoute])
 
   const handleSelectEvidence =
-    useCallback((evidenceId: string) => {
-      sessionStorage.setItem(
-        listUrlKey,
-        `${window.location.pathname}${window.location.search}`,
-      )
+    useCallback(
+      (evidenceId: string) => {
+        sessionStorage.setItem(
+          listUrlKey,
+          `${window.location.pathname}${window.location.search}`,
+        )
 
-      window.history.pushState(
-        {},
-        '',
-        `/evidence/${evidenceId}`,
-      )
+        window.history.pushState(
+          {},
+          '',
+          `/evidence/${evidenceId}`,
+        )
 
-      setSelectedEvidenceId(
-        evidenceId,
-      )
-    }, [])
+        synchronizeRoute()
+      },
+      [synchronizeRoute],
+    )
 
   const handleBackToList =
     useCallback(() => {
@@ -111,13 +164,50 @@ function App() {
         listUrl,
       )
 
-      setSelectedEvidenceId(null)
-    }, [])
+      synchronizeRoute()
+    }, [synchronizeRoute])
+
+  const handleOpenPendingTransfers =
+    useCallback(() => {
+      window.history.pushState(
+        {},
+        '',
+        '/transfers/pending',
+      )
+
+      synchronizeRoute()
+    }, [synchronizeRoute])
+
+  const handleOpenEvidences =
+    useCallback(() => {
+      window.history.pushState(
+        {},
+        '',
+        '/',
+      )
+
+      synchronizeRoute()
+    }, [synchronizeRoute])
 
   if (!session) {
     return (
       <LoginPage
-        onLogin={setSession}
+        onLogin={handleLogin}
+      />
+    )
+  }
+
+  if (
+    showingPendingTransfers &&
+    session.role === 'Custodian'
+  ) {
+    return (
+      <PendingTransfersPage
+        session={session}
+        onOpenEvidences={
+          handleOpenEvidences
+        }
+        onLogout={handleLogout}
       />
     )
   }
@@ -139,6 +229,11 @@ function App() {
       onLogout={handleLogout}
       onSelectEvidence={
         handleSelectEvidence
+      }
+      onOpenPendingTransfers={
+        session.role === 'Custodian'
+          ? handleOpenPendingTransfers
+          : undefined
       }
     />
   )

@@ -25,6 +25,7 @@ interface EvidenceListPageProps {
   onSelectEvidence: (
     evidenceId: string,
   ) => void
+  onOpenPendingTransfers?: () => void
 }
 
 function readFiltersFromUrl():
@@ -154,6 +155,7 @@ export function EvidenceListPage({
   session,
   onLogout,
   onSelectEvidence,
+  onOpenPendingTransfers,
 }: EvidenceListPageProps) {
   const [filters, setFilters] =
     useState<EvidenceListFilters>(
@@ -374,6 +376,18 @@ export function EvidenceListPage({
               {session.role}
             </small>
           </div>
+
+          {onOpenPendingTransfers && (
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={
+                onOpenPendingTransfers
+              }
+            >
+              Transferencias
+            </button>
+          )}
 
           <button
             className="secondary-button"

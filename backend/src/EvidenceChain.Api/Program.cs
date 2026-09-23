@@ -12,6 +12,8 @@ using EvidenceChain.Application.Evidences.Chain;
 using EvidenceChain.Application.Evidences.Detail;
 using EvidenceChain.Application.Evidences.List;
 using EvidenceChain.Application.Evidences.VerifyChain;
+using EvidenceChain.Application.CustodyTransfers.ListPending;
+using EvidenceChain.Application.Users.ListCustodians;
 using EvidenceChain.Infrastructure;
 using EvidenceChain.Infrastructure.Persistence.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -177,6 +179,12 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<
     VerifyEvidenceChainHandler>();
+
+builder.Services.AddScoped<
+    GetPendingCustodyTransfersHandler>();
+
+builder.Services.AddScoped<
+    GetCustodianListHandler>();
 
 // ==========================================
 // Servicios de seguridad
