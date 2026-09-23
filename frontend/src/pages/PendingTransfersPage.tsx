@@ -113,16 +113,20 @@ export function PendingTransfersPage({
 
   useEffect(() => {
     const controller =
-      new AbortController()
+        new AbortController()
 
-    void loadTransfers(
-      controller.signal,
-    )
+    const timeoutId =
+        window.setTimeout(() => {
+        void loadTransfers(
+            controller.signal,
+        )
+        }, 0)
 
     return () => {
-      controller.abort()
+        window.clearTimeout(timeoutId)
+        controller.abort()
     }
-  }, [loadTransfers])
+    }, [loadTransfers])
 
   async function handleAccept(
     transfer: PendingCustodyTransfer,

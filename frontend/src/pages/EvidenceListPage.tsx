@@ -249,7 +249,9 @@ export function EvidenceListPage({
             controller.signal,
           )
 
-        setResult(response)
+        if (!controller.signal.aborted) {
+            setResult(response)
+        }
       } catch (exception) {
         if (
           exception instanceof DOMException &&

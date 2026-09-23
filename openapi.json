@@ -93,6 +93,75 @@
         }
       }
     },
+    "/api/v1/custody-transfers/pending": {
+      "get": {
+        "tags": [
+          "CustodyTransfers"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingCustodyTransfersResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingCustodyTransfersResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingCustodyTransfersResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/custody-transfers": {
       "post": {
         "tags": [
@@ -921,6 +990,84 @@
           }
         }
       }
+    },
+    "/api/v1/users/custodians": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustodianListItem"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustodianListItem"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustodianListItem"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -976,6 +1123,24 @@
           "verifiedAtUtc": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustodianListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1320,6 +1485,80 @@
           "role": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PendingCustodyTransferItem": {
+        "type": "object",
+        "properties": {
+          "transferId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "evidenceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "evidenceCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromCustodianId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromCustodianName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toCustodianId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isExpired": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PendingCustodyTransfersResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingCustodyTransferItem"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

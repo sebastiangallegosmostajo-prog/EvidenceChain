@@ -24,7 +24,9 @@ interface RequestTransferPanelProps {
   onLogout: () => void
 }
 
-function formatDate(value: string): string {
+function formatDate(
+  value: string,
+): string {
   return new Intl.DateTimeFormat(
     'es-PE',
     {
@@ -63,8 +65,15 @@ export function RequestTransferPanel({
   const [isLoading, setIsLoading] =
     useState(true)
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false)
+
+  const [
+    isOptimisticPending,
+    setIsOptimisticPending,
+  ] = useState(false)
 
   const [error, setError] =
     useState<string | null>(null)
@@ -75,6 +84,7 @@ export function RequestTransferPanel({
 
     async function loadCustodians() {
       setIsLoading(true)
+      setError(null)
 
       try {
         const response =
@@ -82,17 +92,23 @@ export function RequestTransferPanel({
             controller.signal,
           )
 
-        setCustodians(
-          response.filter(
-            (custodian) =>
-              custodian.id !==
+        if (
+          !controller.signal.aborted
+        ) {
+          setCustodians(
+            response.filter(
+              (custodian) =>
+                custodian.id !==
                 currentCustodianId,
-          ),
-        )
+            ),
+          )
+        }
       } catch (exception) {
         if (
-          exception instanceof DOMException &&
-          exception.name === 'AbortError'
+          exception instanceof
+            DOMException &&
+          exception.name ===
+            'AbortError'
         ) {
           return
         }
@@ -115,7 +131,9 @@ export function RequestTransferPanel({
           )
         }
       } finally {
-        if (!controller.signal.aborted) {
+        if (
+          !controller.signal.aborted
+        ) {
           setIsLoading(false)
         }
       }
@@ -140,6 +158,7 @@ export function RequestTransferPanel({
 
     setResult(null)
     setError(null)
+    setIsOptimisticPending(false)
 
     setIdempotencyKey(
       crypto.randomUUID(),
@@ -155,10 +174,12 @@ export function RequestTransferPanel({
       setError(
         'Selecciona el custodio destinatario.',
       )
+
       return
     }
 
     setIsSubmitting(true)
+    setIsOptimisticPending(true)
     setError(null)
     setResult(null)
 
@@ -170,6 +191,7 @@ export function RequestTransferPanel({
           idempotencyKey,
         )
 
+      setIsOptimisticPending(false)
       setResult(response)
       setSelectedCustodianId('')
 
@@ -179,11 +201,25 @@ export function RequestTransferPanel({
 
       onRequested()
     } catch (exception) {
+      setIsOptimisticPending(false)
+
       if (
         exception instanceof ApiError &&
         exception.status === 401
       ) {
         onLogout()
+        return
+      }
+
+      if (
+        exception instanceof ApiError &&
+        exception.status === 409
+      ) {
+        setError(
+          exception.message ||
+            'La transferencia cambió de estado. Actualiza la información e intenta nuevamente.',
+        )
+
         return
       }
 
@@ -197,12 +233,15 @@ export function RequestTransferPanel({
         )
       }
     } finally {
+      setIsOptimisticPending(false)
       setIsSubmitting(false)
     }
   }
 
   return (
-    <section className="request-transfer-panel">
+    <section
+      className="request-transfer-panel"
+    >
       <div>
         <p className="eyebrow">
           Cambio de custodia
@@ -213,8 +252,9 @@ export function RequestTransferPanel({
         </h2>
 
         <p>
-          Selecciona el custodio que deberá
-          aceptar o rechazar la solicitud.
+          Selecciona el custodio que
+          deberá aceptar o rechazar la
+          solicitud.
         </p>
       </div>
 
@@ -226,7 +266,9 @@ export function RequestTransferPanel({
           Custodio destinatario
 
           <select
-            value={selectedCustodianId}
+            value={
+              selectedCustodianId
+            }
             disabled={
               isLoading ||
               isSubmitting
@@ -250,7 +292,8 @@ export function RequestTransferPanel({
                   key={custodian.id}
                   value={custodian.id}
                 >
-                  {custodian.name} —{' '}
+                  {custodian.name}
+                  {' — '}
                   {custodian.email}
                 </option>
               ),
@@ -271,6 +314,16 @@ export function RequestTransferPanel({
             : 'Solicitar transferencia'}
         </button>
       </form>
+
+      {isOptimisticPending && (
+        <div
+          className="pending-message"
+          role="status"
+        >
+          Transferencia pendiente de
+          confirmación.
+        </div>
+      )}
 
       {error && (
         <div
