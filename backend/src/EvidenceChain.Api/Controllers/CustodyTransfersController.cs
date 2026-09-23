@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EvidenceChain.Api.Contracts.CustodyTransfers;
 using EvidenceChain.Application.CustodyTransfers.Accept;
 using EvidenceChain.Application.CustodyTransfers.Common;
+using EvidenceChain.Application.CustodyTransfers.Reject;
 using EvidenceChain.Application.CustodyTransfers.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,22 +21,27 @@ public sealed class CustodyTransfersController
     private readonly AcceptCustodyTransferHandler
         _acceptTransferHandler;
 
+    private readonly RejectCustodyTransferHandler
+        _rejectTransferHandler;
+
     public CustodyTransfersController(
-        RequestCustodyTransferHandler
-            requestTransferHandler,
-        AcceptCustodyTransferHandler
-            acceptTransferHandler)
+        RequestCustodyTransferHandler requestTransferHandler,
+        AcceptCustodyTransferHandler acceptTransferHandler,
+        RejectCustodyTransferHandler rejectTransferHandler)
     {
         _requestTransferHandler =
             requestTransferHandler;
 
         _acceptTransferHandler =
             acceptTransferHandler;
+
+        _rejectTransferHandler =
+            rejectTransferHandler;
     }
 
-    // =====================================================
+    // ==========================================
     // Solicitar una transferencia
-    // =====================================================
+    // ==========================================
 
     [HttpPost]
     [Authorize(Roles = "Investigator,Supervisor")]
@@ -57,7 +63,8 @@ public sealed class CustodyTransfersController
     [ProducesResponseType(
         typeof(ProblemDetails),
         StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<RequestCustodyTransferResult>>
+    public async Task<
+        ActionResult<RequestCustodyTransferResult>>
         RequestTransfer(
             [FromBody]
             RequestCustodyTransferRequest request,
@@ -117,9 +124,9 @@ public sealed class CustodyTransfersController
             result);
     }
 
-    // =====================================================
+    // ==========================================
     // Aceptar una transferencia
-    // =====================================================
+    // ==========================================
 
     [HttpPost("{id:guid}/accept")]
     [Authorize(Roles = "Custodian")]
@@ -141,7 +148,8 @@ public sealed class CustodyTransfersController
     [ProducesResponseType(
         typeof(ProblemDetails),
         StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CustodyTransferActionResult>>
+    public async Task<
+        ActionResult<CustodyTransferActionResult>>
         AcceptTransfer(
             Guid id,
 
@@ -160,7 +168,7 @@ public sealed class CustodyTransfersController
                 title:
                     "If-Match inválido.",
                 detail:
-                    "Debe enviar el ETag recibido al crear o consultar la transferencia.");
+                    "Debe enviar el ETag vigente en la cabecera If-Match.");
         }
 
         var userIdValue =
@@ -198,40 +206,145 @@ public sealed class CustodyTransfersController
         return Ok(result);
     }
 
-    // =====================================================
-    // Conversión del ETag a rowversion
-    // =====================================================
+    // ==========================================
+    // Rechazar una transferencia
+    // ==========================================
+
+    [HttpPost("{id:guid}/reject")]
+    [Authorize(Roles = "Custodian")]
+    [ProducesResponseType(
+        typeof(CustodyTransferActionResult),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status409Conflict)]
+    public async Task<
+        ActionResult<CustodyTransferActionResult>>
+        RejectTransfer(
+            Guid id,
+
+            [FromBody]
+            RejectCustodyTransferRequest request,
+
+            [FromHeader(Name = "If-Match")]
+            string? ifMatch,
+
+            CancellationToken cancellationToken)
+    {
+        if (!TryParseETag(
+                ifMatch,
+                out var expectedRowVersion))
+        {
+            return Problem(
+                statusCode:
+                    StatusCodes.Status400BadRequest,
+                title:
+                    "If-Match inválido.",
+                detail:
+                    "Debe enviar el ETag vigente en la cabecera If-Match.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.Reason))
+        {
+            return Problem(
+                statusCode:
+                    StatusCodes.Status400BadRequest,
+                title:
+                    "Motivo obligatorio.",
+                detail:
+                    "Debe indicar el motivo del rechazo.");
+        }
+
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(
+                userIdValue,
+                out var actorId))
+        {
+            return Problem(
+                statusCode:
+                    StatusCodes.Status401Unauthorized,
+                title:
+                    "Token inválido.",
+                detail:
+                    "El token no contiene un identificador de usuario válido.");
+        }
+
+        var command =
+            new RejectCustodyTransferCommand(
+                id,
+                actorId,
+                request.Reason,
+                expectedRowVersion);
+
+        var result =
+            await _rejectTransferHandler
+                .HandleAsync(
+                    command,
+                    cancellationToken);
+
+        Response.Headers.ETag =
+            $"\"{result.RowVersion}\"";
+
+        return Ok(result);
+    }
+
+    // ==========================================
+    // Conversión de ETag a rowversion
+    // ==========================================
 
     private static bool TryParseETag(
-        string? value,
+        string? etag,
         out byte[] rowVersion)
     {
-        rowVersion = [];
+        rowVersion =
+            Array.Empty<byte>();
 
-        if (string.IsNullOrWhiteSpace(value))
+        if (string.IsNullOrWhiteSpace(
+                etag))
         {
             return false;
         }
 
-        var normalizedValue =
-            value.Trim();
+        var value =
+            etag.Trim();
 
-        if (normalizedValue.StartsWith(
+        if (value.StartsWith(
                 "W/",
                 StringComparison.OrdinalIgnoreCase))
         {
-            normalizedValue =
-                normalizedValue[2..].Trim();
+            value =
+                value[2..].Trim();
         }
 
-        normalizedValue =
-            normalizedValue.Trim('"');
+        if (value.Length >= 2 &&
+            value.StartsWith('"') &&
+            value.EndsWith('"'))
+        {
+            value =
+                value[1..^1];
+        }
 
         try
         {
             rowVersion =
                 Convert.FromBase64String(
-                    normalizedValue);
+                    value);
 
             return rowVersion.Length > 0;
         }

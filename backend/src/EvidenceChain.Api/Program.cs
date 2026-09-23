@@ -2,13 +2,14 @@ using System.Security.Claims;
 using System.Text;
 using EvidenceChain.Api.Authentication;
 using EvidenceChain.Api.ErrorHandling;
+using EvidenceChain.Application.Authentication.Login;
 using EvidenceChain.Application.Common.Interfaces;
 using EvidenceChain.Application.Common.Options;
-using EvidenceChain.Application.CustodyTransfers.Request;
 using EvidenceChain.Application.CustodyTransfers.Accept;
+using EvidenceChain.Application.CustodyTransfers.Reject;
+using EvidenceChain.Application.CustodyTransfers.Request;
 using EvidenceChain.Infrastructure;
 using EvidenceChain.Infrastructure.Persistence.Seeding;
-using EvidenceChain.Application.Authentication.Login;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -116,8 +117,16 @@ builder.Services.Configure<CustodyTransferOptions>(
 builder.Services.AddSingleton(
     TimeProvider.System);
 
+builder.Services.AddScoped<LoginHandler>();
+
 builder.Services.AddScoped<
     RequestCustodyTransferHandler>();
+
+builder.Services.AddScoped<
+    AcceptCustodyTransferHandler>();
+
+builder.Services.AddScoped<
+    RejectCustodyTransferHandler>();
 
 // ==========================================
 // Servicios de seguridad
@@ -165,13 +174,19 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+// ==========================================
+// Servicios de infraestructura y errores
+// ==========================================
+
 builder.Services.AddScoped<DatabaseSeeder>();
+
 builder.Services.AddScoped<EvidenceDataSeeder>();
-builder.Services.AddScoped<LoginHandler>();
-builder.Services.AddScoped<RequestCustodyTransferHandler>();
+
 builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<ApiExceptionHandler>();
-builder.Services.AddScoped<AcceptCustodyTransferHandler>();
+
+builder.Services.AddExceptionHandler<
+    ApiExceptionHandler>();
 
 // ==========================================
 // Construcción de la aplicación
@@ -180,8 +195,9 @@ builder.Services.AddScoped<AcceptCustodyTransferHandler>();
 var app = builder.Build();
 
 // ==========================================
-// Pipeline HTTP
+// Carga de datos de desarrollo
 // ==========================================
+
 if (app.Environment.IsDevelopment())
 {
     var seedPassword =
@@ -207,9 +223,14 @@ if (app.Environment.IsDevelopment())
     await evidenceSeeder.SeedAsync();
 }
 
+// ==========================================
+// Pipeline HTTP
+// ==========================================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+
     app.UseSwaggerUI();
 }
 
