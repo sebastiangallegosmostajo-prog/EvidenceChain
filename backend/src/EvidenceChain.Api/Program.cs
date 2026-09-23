@@ -8,9 +8,9 @@ using EvidenceChain.Application.Common.Options;
 using EvidenceChain.Application.CustodyTransfers.Accept;
 using EvidenceChain.Application.CustodyTransfers.Reject;
 using EvidenceChain.Application.CustodyTransfers.Request;
-using EvidenceChain.Application.Evidences.List;
-using EvidenceChain.Application.Evidences.Detail;
 using EvidenceChain.Application.Evidences.Chain;
+using EvidenceChain.Application.Evidences.Detail;
+using EvidenceChain.Application.Evidences.List;
 using EvidenceChain.Application.Evidences.VerifyChain;
 using EvidenceChain.Infrastructure;
 using EvidenceChain.Infrastructure.Persistence.Seeding;
@@ -18,7 +18,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-var builder = WebApplication.CreateBuilder(args);
+const string FrontendCorsPolicy =
+    "FrontendCors";
+
+var builder =
+    WebApplication.CreateBuilder(args);
 
 // ==========================================
 // Configuración de la base de datos
@@ -67,6 +71,36 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Audience))
 
 builder.Services.Configure<JwtOptions>(
     jwtSection);
+
+// ==========================================
+// Configuración CORS
+// ==========================================
+
+var allowedOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? Array.Empty<string>();
+
+if (builder.Environment.IsDevelopment() &&
+    allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "Debe configurarse al menos un origen CORS en desarrollo.");
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        FrontendCorsPolicy,
+        policy =>
+        {
+            policy
+                .WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
 
 // ==========================================
 // Servicios de ASP.NET Core
@@ -253,6 +287,11 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+
+app.UseCors(
+    FrontendCorsPolicy);
 
 app.UseAuthentication();
 
