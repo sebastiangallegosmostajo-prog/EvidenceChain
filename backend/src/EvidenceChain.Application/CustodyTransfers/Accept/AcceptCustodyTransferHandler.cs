@@ -99,13 +99,21 @@ public sealed class AcceptCustodyTransferHandler
         var respondedAtUtc =
             _timeProvider.GetUtcNow();
 
-        transfer.Accept(
-            command.ActorId,
-            respondedAtUtc);
+        try
+        {
+            transfer.Accept(
+                command.ActorId,
+                respondedAtUtc);
 
-        evidence.TransferCustody(
-            transfer.ToCustodianId,
-            respondedAtUtc);
+            evidence.TransferCustody(
+                transfer.ToCustodianId,
+                respondedAtUtc);
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new ConflictException(
+                exception.Message);
+        }
 
         var custodyEvent = CustodyEvent.Create(
             Guid.NewGuid(),

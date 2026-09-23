@@ -108,10 +108,18 @@ public sealed class RejectCustodyTransferHandler
         var rejectionReason =
             command.Reason.Trim();
 
-        transfer.Reject(
-            command.ActorId,
-            respondedAtUtc,
-            rejectionReason);
+        try
+        {
+            transfer.Reject(
+                command.ActorId,
+                respondedAtUtc,
+                rejectionReason);
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new ConflictException(
+                exception.Message);
+        }
 
         evidence.RegisterEvent(
             respondedAtUtc);
