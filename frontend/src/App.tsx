@@ -1,7 +1,11 @@
 import {
+  useCallback,
   useState,
 } from 'react'
 import './App.css'
+import {
+  EvidenceListPage,
+} from './pages/EvidenceListPage'
 import {
   LoginPage,
 } from './pages/LoginPage'
@@ -19,10 +23,17 @@ function App() {
       getStoredSession,
     )
 
-  function handleLogout() {
-    clearSession()
-    setSession(null)
-  }
+  const handleLogout =
+    useCallback(() => {
+      clearSession()
+      setSession(null)
+
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname,
+      )
+    }, [])
 
   if (!session) {
     return (
@@ -33,45 +44,10 @@ function App() {
   }
 
   return (
-    <main className="authenticated-layout">
-      <header className="application-header">
-        <div>
-          <span className="brand-mark small">
-            EC
-          </span>
-
-          <strong>EvidenceChain</strong>
-        </div>
-
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={handleLogout}
-        >
-          Cerrar sesión
-        </button>
-      </header>
-
-      <section className="welcome-card">
-        <p className="eyebrow">
-          Sesión iniciada
-        </p>
-
-        <h1>
-          Bienvenido, {session.name}
-        </h1>
-
-        <p>
-          Tu perfil es{' '}
-          <strong>{session.role}</strong>.
-        </p>
-
-        <p>
-          En el siguiente paso construiremos
-          aquí la bandeja de evidencias.
-        </p>
-      </section>
-    </main>
+    <EvidenceListPage
+      session={session}
+      onLogout={handleLogout}
+    />
   )
 }
 

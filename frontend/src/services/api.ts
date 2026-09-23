@@ -77,7 +77,14 @@ export async function apiRequest<T>(
         headers,
       },
     )
-  } catch {
+  } catch (exception) {
+    if (
+      exception instanceof DOMException &&
+      exception.name === 'AbortError'
+    ) {
+      throw exception
+    }
+
     throw new ApiError(
       'No fue posible conectarse con la API.',
       0,
