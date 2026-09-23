@@ -82,4 +82,17 @@ public sealed class Evidence
 
         RegisterEvent(occurredAtUtc);
     }
+
+    public void UpdateIntegrityStatus(
+        IntegrityStatus integrityStatus)
+    {
+        if (!Enum.IsDefined(integrityStatus))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(integrityStatus));
+        }
+
+        IntegrityStatus =
+            integrityStatus;
+    }
 }

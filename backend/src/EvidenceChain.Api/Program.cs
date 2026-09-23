@@ -8,6 +8,10 @@ using EvidenceChain.Application.Common.Options;
 using EvidenceChain.Application.CustodyTransfers.Accept;
 using EvidenceChain.Application.CustodyTransfers.Reject;
 using EvidenceChain.Application.CustodyTransfers.Request;
+using EvidenceChain.Application.Evidences.List;
+using EvidenceChain.Application.Evidences.Detail;
+using EvidenceChain.Application.Evidences.Chain;
+using EvidenceChain.Application.Evidences.VerifyChain;
 using EvidenceChain.Infrastructure;
 using EvidenceChain.Infrastructure.Persistence.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -127,6 +131,18 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<
     RejectCustodyTransferHandler>();
+
+builder.Services.AddScoped<
+    GetEvidenceListHandler>();
+
+builder.Services.AddScoped<
+    GetEvidenceDetailHandler>();
+
+builder.Services.AddScoped<
+    GetEvidenceChainHandler>();
+
+builder.Services.AddScoped<
+    VerifyEvidenceChainHandler>();
 
 // ==========================================
 // Servicios de seguridad
